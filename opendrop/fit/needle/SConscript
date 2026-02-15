@@ -8,6 +8,14 @@ env.Clone(tools=['cython'],
 env.Append(CPPPATH=['$PYTHONINCLUDES'],
            LIBPATH=['$PYTHONLIBPATH'],
            LIBS=['$PYTHONLIB', 'm'])
+
+# Runtime library path configuration for macOS
+if env['PLATFORM'] == 'darwin':
+    env.Append(
+        RPATH=['@loader_path', '@executable_path'],
+        LINKFLAGS=['-Wl,-rpath,@loader_path', '-Wl,-rpath,@executable_path']
+    )
+
 env.VariantDir('.checkpoints', '.', duplicate=False)
 
 hough = env.SharedLibrary('hough', env.Cython('.checkpoints/hough.pyx'))
