@@ -37,6 +37,13 @@ OpenDrop is currently distributed as a Python package and can be installed on mo
 
 For installation instructions and user guides, visit: https://opendrop.readthedocs.io/
 
+Quick test on macOS (Apple Silicon)
+-----------------------------------
+1. Install system dependencies: ``brew install gtk+3 gobject-introspection``
+2. Create a virtualenv: ``python3 -m venv .venv && source .venv/bin/activate``
+3. Install Python dependencies: ``pip install -r requirements.txt``
+4. Launch the app: ``python -m opendrop`` (main menu should appear)
+
 Example images have been provided in the 'example_images' folder.
 
 
