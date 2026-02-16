@@ -104,19 +104,28 @@ boost_include_dir = os.getenv('BOOST_INCLUDE_DIR', boost_default)
 
 sundials_include_dir, sundials_lib_dir = find_sundials_paths(homebrew_prefix)
 
-sundials_libs = ['sundials_arkode', 'sundials_nvecserial']
-if sundials_lib_dir and library_present(sundials_lib_dir, 'sundials_core'):
-    sundials_libs.insert(0, 'sundials_core')
+if detected_platform == 'darwin' and system_arch == 'arm64':
+    if not sundials_include_dir and Path('/opt/homebrew/include').exists():
+        sundials_include_dir = Path('/opt/homebrew/include')
+    if not sundials_lib_dir and Path('/opt/homebrew/lib').exists():
+        sundials_lib_dir = Path('/opt/homebrew/lib')
+
+sundials_libs = ['sundials_core', 'sundials_arkode', 'sundials_nvecserial']
+if sundials_lib_dir and not library_present(sundials_lib_dir, 'sundials_core'):
+    sundials_libs = ['sundials_arkode', 'sundials_nvecserial']
+
+sundials_cpppath = [sundials_include_dir] if sundials_include_dir else []
+sundials_libpath = [sundials_lib_dir] if sundials_lib_dir else []
 
 env['SUNDIALS_LIBS'] = sundials_libs
+env['SUNDIALS_CPPPATH'] = sundials_cpppath
+env['SUNDIALS_LIBPATH'] = sundials_libpath
 
-include_paths = [env.Dir('include'), boost_include_dir, mpich_dir]
-if sundials_include_dir:
-    include_paths.append(sundials_include_dir)
+include_paths = [env.Dir('include'), boost_include_dir, mpich_dir] + sundials_cpppath
 
 env.Append(ENV={'PATH': os.environ['PATH']}, CPPPATH=include_paths)
-if sundials_lib_dir:
-    env.Append(LIBPATH=[sundials_lib_dir])
+if sundials_libpath:
+    env.Append(LIBPATH=sundials_libpath)
 
 AddOption(
     '--build-dir',
