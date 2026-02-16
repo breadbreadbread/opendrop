@@ -14,6 +14,13 @@ env.Append(
     LIBS=['$PYTHONLIB'],
 )
 
+# Runtime library path configuration for macOS
+if env['PLATFORM'] == 'darwin':
+    env.Append(
+        RPATH=['@loader_path', '@executable_path'],
+        LINKFLAGS=['-Wl,-rpath,@loader_path', '-Wl,-rpath,@executable_path']
+    )
+
 env.VariantDir('.checkpoints', '.', duplicate=False)
 
 colorize_c = env.Cython('.checkpoints/colorize.pyx')
