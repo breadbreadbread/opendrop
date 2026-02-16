@@ -12,6 +12,15 @@
 #include <sundials/sundials_types.h>
 #include <arkode/arkode_erkstep.h>
 #include <nvector/nvector_serial.h>
+
+// Handle SUNDIALS version compatibility for SUN_COMM_NULL
+// In SUNDIALS 6.x, SUN_COMM_NULL was replaced with nullptr (or MPI_COMM_NULL for MPI builds)
+#if defined(SUNDIALS_VERSION_MAJOR) && SUNDIALS_VERSION_MAJOR >= 6
+#define OPENDROP_SUN_COMM_NULL nullptr
+#else
+// In older versions, use SUN_COMM_NULL
+#define OPENDROP_SUN_COMM_NULL SUN_COMM_NULL
+#endif
 #include <boost/math/differentiation/autodiff.hpp>
 #include <boost/math/constants/constants.hpp>
 
@@ -51,10 +60,10 @@ YoungLaplaceShape<realtype>::YoungLaplaceShape(realtype bond) {
 
     this->bond = bond;
 
-    flag = SUNContext_Create(SUN_COMM_NULL, &sunctx);
+    flag = SUNContext_Create(OPENDROP_SUN_COMM_NULL, &sunctx);
     if (flag < 0) throw std::runtime_error("SUNContext_Create() failed.");
 
-    flag = SUNContext_Create(SUN_COMM_NULL, &sunctx_DBo);
+    flag = SUNContext_Create(OPENDROP_SUN_COMM_NULL, &sunctx_DBo);
     if (flag < 0) throw std::runtime_error("SUNContext_Create() failed.");
 
     nv = N_VNew_Serial(4, sunctx);
@@ -344,7 +353,7 @@ YoungLaplaceShape<realtype>::volume(realtype s)
     s = std::abs(s);
 
     SUNContext sunctx_vol;
-    flag = SUNContext_Create(SUN_COMM_NULL, &sunctx_vol);
+    flag = SUNContext_Create(OPENDROP_SUN_COMM_NULL, &sunctx_vol);
     if (flag < 0) throw std::runtime_error("SUNContext_Create() failed.");
 
     N_Vector nv_vol = N_VMake_Serial(1, data, sunctx_vol);
@@ -386,7 +395,7 @@ YoungLaplaceShape<realtype>::surface_area(realtype s)
     s = std::abs(s);
 
     SUNContext sunctx_surf;
-    flag = SUNContext_Create(SUN_COMM_NULL, &sunctx_surf);
+    flag = SUNContext_Create(OPENDROP_SUN_COMM_NULL, &sunctx_surf);
     if (flag < 0) throw std::runtime_error("SUNContext_Create() failed.");
 
     N_Vector nv_surf = N_VMake_Serial(1, data, sunctx_surf);
