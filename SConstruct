@@ -24,6 +24,10 @@ def detect_homebrew_prefix():
     return prefix or default_prefix
 
 
+def library_present(path, name):
+    return any(path.glob(f"lib{name}*"))
+
+
 def find_sundials_paths(homebrew_prefix):
     include_candidates = [Path('/usr/include'), Path('/usr/local/include')]
     lib_candidates = [
@@ -45,7 +49,16 @@ def find_sundials_paths(homebrew_prefix):
         (path for path in include_candidates if (path / 'arkode' / 'arkode_erkstep.h').exists()),
         None,
     )
-    lib_dir = next((path for path in lib_candidates if path.exists()), None)
+
+    required_libs = ['sundials_arkode', 'sundials_nvecserial']
+    lib_dir = next(
+        (
+            path
+            for path in lib_candidates
+            if path.exists() and all(library_present(path, lib) for lib in required_libs)
+        ),
+        None,
+    )
 
     return include_dir, lib_dir
 
@@ -90,6 +103,12 @@ mpich_dir = os.getenv('MPICH_DIR', mpich_default)
 boost_include_dir = os.getenv('BOOST_INCLUDE_DIR', boost_default)
 
 sundials_include_dir, sundials_lib_dir = find_sundials_paths(homebrew_prefix)
+
+sundials_libs = ['sundials_arkode', 'sundials_nvecserial']
+if sundials_lib_dir and library_present(sundials_lib_dir, 'sundials_core'):
+    sundials_libs.insert(0, 'sundials_core')
+
+env['SUNDIALS_LIBS'] = sundials_libs
 
 include_paths = [env.Dir('include'), boost_include_dir, mpich_dir]
 if sundials_include_dir:
