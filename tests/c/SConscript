@@ -7,17 +7,14 @@ env.Append(
     CPPDEFINES=['BOOST_TEST_DYN_LINK'],
 )
 
-# Add platform-specific MPI handling
-mpi_libs = []
-if env['PLATFORM'] == 'darwin':
-    # On macOS, try openmpi or mpich from Homebrew
-    mpi_libs = ['mpi']
-elif env['PLATFORM'] == 'posix':
-    mpi_libs = ['mpi']
+mpi_libs = ['mpi'] if env['PLATFORM'] in {'darwin', 'posix'} else []
 
 tests = [
     env.Program('test_interpolate.cpp'),
-    env.Program('test_younglaplace.cpp', LIBS=env['LIBS']+['sundials_core', 'sundials_arkode', 'sundials_nvecserial'] + mpi_libs),
+    env.Program(
+        'test_younglaplace.cpp',
+        LIBS=env['LIBS'] + ['sundials_core', 'sundials_arkode', 'sundials_nvecserial'] + mpi_libs,
+    ),
 ]
 
 Return('tests')

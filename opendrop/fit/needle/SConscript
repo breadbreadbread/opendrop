@@ -1,19 +1,22 @@
 Import('env')
 
 
-env = \
-env.Clone(tools=['cython'],
-          SHLIBPREFIX='',
-          SHLIBSUFFIX='$PYTHON_EXT_SUFFIX')
-env.Append(CPPPATH=['$PYTHONINCLUDES'],
-           LIBPATH=['$PYTHONLIBPATH'],
-           LIBS=['$PYTHONLIB', 'm'])
+env = env.Clone(
+    tools=['cython'],
+    SHLIBPREFIX='',
+    SHLIBSUFFIX='$PYTHON_EXT_SUFFIX',
+)
 
-# Runtime library path configuration for macOS
+env.Append(
+    CPPPATH=['$PYTHONINCLUDES'],
+    LIBPATH=['$PYTHONLIBPATH'],
+    LIBS=['$PYTHONLIB', 'm'],
+)
+
 if env['PLATFORM'] == 'darwin':
     env.Append(
         RPATH=['@loader_path', '@executable_path'],
-        LINKFLAGS=['-Wl,-rpath,@loader_path', '-Wl,-rpath,@executable_path']
+        LINKFLAGS=['-Wl,-rpath,@loader_path', '-Wl,-rpath,@executable_path'],
     )
 
 env.VariantDir('.checkpoints', '.', duplicate=False)
