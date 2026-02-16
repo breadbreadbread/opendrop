@@ -27,7 +27,20 @@ def detect_homebrew_prefix():
 
 def find_sundials_paths(homebrew_prefix):
     """Find SUNDIALS include and lib directories"""
-    # Common Homebrew SUNDIALS paths
+    # Linux system paths first (most common)
+    linux_paths = [
+        Path('/usr/include'),
+        Path('/usr/local/include'),
+    ]
+    
+    lib_linux_paths = [
+        Path('/usr/lib'),
+        Path('/usr/lib/x86_64-linux-gnu'),
+        Path('/usr/local/lib'),
+        Path('/usr/local/lib/x86_64-linux-gnu'),
+    ]
+    
+    # Homebrew SUNDIALS paths (macOS)
     sundials_paths = [
         Path(homebrew_prefix) / 'include',
         Path(homebrew_prefix) / 'Cellar/sundials' / '*/include',
@@ -44,17 +57,27 @@ def find_sundials_paths(homebrew_prefix):
     include_dir = None
     lib_dir = None
     
-    for path in sundials_paths:
-        if path.name == 'include' and path.exists():
+    # First try Linux paths (they're usually more standard)
+    for path in linux_paths:
+        arkode_header = path / 'arkode' / 'arkode_erkstep.h'
+        if arkode_header.exists():
             include_dir = path
             break
-        elif 'Cellar' in str(path):
-            matching = list(path.parent.glob('sundials/*/include'))
-            if matching:
-                include_dir = matching[0]
-                break
     
-    for path in lib_paths:
+    # If not found, try Homebrew paths
+    if not include_dir:
+        for path in sundials_paths:
+            if path.name == 'include' and path.exists():
+                include_dir = path
+                break
+            elif 'Cellar' in str(path):
+                matching = list(path.parent.glob('sundials/*/include'))
+                if matching:
+                    include_dir = matching[0]
+                    break
+    
+    # Find library directory
+    for path in lib_linux_paths + lib_paths:
         if path.name == 'lib' and path.exists():
             lib_dir = path
             break
@@ -73,12 +96,25 @@ homebrew_prefix = detect_homebrew_prefix()
 print(f"Detected architecture: {system_arch}")
 print(f"Homebrew prefix: {homebrew_prefix}")
 
+# Detect platform - do this before Environment creation
+import sys
+platform_name = sys.platform
+if platform_name == 'darwin':
+    detected_platform = 'darwin'
+elif platform_name.startswith('linux'):
+    detected_platform = 'posix'
+else:
+    detected_platform = platform_name
+
 # Set up compiler flags based on architecture
 ccflags = ['-O3', '-std=c++14']
-if system_arch == 'arm64':
-    ccflags.extend(['-arch', 'arm64'])
-elif system_arch == 'x86_64':
-    ccflags.extend(['-arch', 'x86_64'])
+
+# Only add architecture flags on macOS (where they're supported)
+if detected_platform == 'darwin':
+    if system_arch == 'arm64':
+        ccflags.extend(['-arch', 'arm64'])
+    elif system_arch == 'x86_64':
+        ccflags.extend(['-arch', 'x86_64'])
 
 env = Environment(
     NAME='opendrop',
@@ -100,12 +136,22 @@ mpich_dir = os.getenv('MPICH_DIR', os.path.join(homebrew_prefix, 'include'))
 boost_include_dir = os.getenv('BOOST_INCLUDE_DIR', os.path.join(homebrew_prefix, 'Cellar/boost'))
 sundials_include_dir, sundials_lib_dir = find_sundials_paths(homebrew_prefix)
 
+print(f"Detected SUNDIALS include: {sundials_include_dir}")
+print(f"Detected SUNDIALS lib: {sundials_lib_dir}")
+
 # Build include and library paths
-include_paths = [env.Dir('include'), boost_include_dir, mpich_dir]
+include_paths = [env.Dir('include')]
+if detected_platform != 'darwin':
+    # On Linux, include paths for system libraries
+    include_paths.extend(['/usr/include', '/usr/local/include'])
+include_paths.extend([boost_include_dir, mpich_dir])
 if sundials_include_dir:
     include_paths.append(sundials_include_dir)
 
 library_paths = []
+if detected_platform != 'darwin':
+    # On Linux, add multiarch library paths
+    library_paths.extend(['/usr/lib', '/usr/lib/x86_64-linux-gnu', '/usr/local/lib'])
 if sundials_lib_dir:
     library_paths.append(sundials_lib_dir)
 
@@ -125,7 +171,7 @@ AddOption(
 env['BUILDDIR'] = GetOption('build_dir')
 
 # Add runtime library path configuration for macOS
-if env['PLATFORM'] == 'darwin':
+if detected_platform == 'darwin':
     # Configure runtime library paths for dynamic libraries
     env.Append(
         ENV={'PATH': os.environ['PATH']},
@@ -147,7 +193,7 @@ env.Tool('pydist')
 package_files = SConscript('opendrop/SConscript', exports='env')
 
 # Determine platform tag based on architecture
-if env['PLATFORM'] == 'darwin':
+if detected_platform == 'darwin':
     if system_arch == 'arm64':
         platform_tag = 'macosx_11_0_arm64'
     else:

@@ -16,7 +16,8 @@ env_ext.Append(
 )
 
 # Add SUNDIALS libraries with proper error handling
-sundials_libs = ['sundials_core', 'sundials_arkode', 'sundials_nvecserial']
+# SUNDIALS 6.x uses different library names
+sundials_libs = ['sundials_nvecserial', 'sundials_arkode']
 try:
     env_ext.Append(LIBS=['$PYTHONLIB'] + sundials_libs)
 except:
