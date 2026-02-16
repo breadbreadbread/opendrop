@@ -14,12 +14,10 @@
 #include <nvector/nvector_serial.h>
 
 // Handle SUNDIALS version compatibility for SUN_COMM_NULL
-// In SUNDIALS 6.x, SUN_COMM_NULL was replaced with nullptr (or MPI_COMM_NULL for MPI builds)
-#if defined(SUNDIALS_VERSION_MAJOR) && SUNDIALS_VERSION_MAJOR >= 6
-#define OPENDROP_SUN_COMM_NULL nullptr
-#else
-// In older versions, use SUN_COMM_NULL
+#ifdef SUN_COMM_NULL
 #define OPENDROP_SUN_COMM_NULL SUN_COMM_NULL
+#else
+#define OPENDROP_SUN_COMM_NULL nullptr
 #endif
 #include <boost/math/differentiation/autodiff.hpp>
 #include <boost/math/constants/constants.hpp>
