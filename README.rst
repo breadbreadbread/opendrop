@@ -37,9 +37,6 @@ OpenDrop is currently distributed as a Python package and can be installed on mo
 
 For installation instructions and user guides, visit: https://opendrop.readthedocs.io/
 
-**macOS Apple Silicon (M1/M2/M3) Support:**
-As of the latest updates, OpenDrop supports macOS running on Apple Silicon. Please see the `Apple Silicon Installation Guide <https://github.com/jdber1/opendrop/blob/development/docs/apple_silicon_install.rst>`_ for detailed instructions.
-
 Example images have been provided in the 'example_images' folder.
 
 

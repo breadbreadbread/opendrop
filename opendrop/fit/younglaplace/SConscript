@@ -3,38 +3,27 @@ Import('env')
 
 env = env.Clone(
     tools=['cython'],
-
     SHLIBPREFIX='',
     SHLIBSUFFIX='$PYTHON_EXT_SUFFIX',
 )
 
-# Clone environment with additional configuration
-env_ext = env.Clone()
-env_ext.Append(
+env.Append(
     CPPPATH=['$PYTHONINCLUDES'],
     LIBPATH=['$PYTHONLIBPATH'],
+    LIBS=['$PYTHONLIB'] + env.get(
+        'SUNDIALS_LIBS',
+        ['sundials_core', 'sundials_arkode', 'sundials_nvecserial'],
+    ),
 )
 
-# Add SUNDIALS libraries with proper error handling
-# SUNDIALS 6.x uses different library names
-sundials_libs = ['sundials_nvecserial', 'sundials_arkode']
-try:
-    env_ext.Append(LIBS=['$PYTHONLIB'] + sundials_libs)
-except:
-    # Fallback without SUNDIALS if not found
-    env_ext.Append(LIBS=['$PYTHONLIB'])
-
-# Runtime library path configuration for macOS
-if env_ext['PLATFORM'] == 'darwin':
-    # Add proper RPATH for macOS dynamic libraries
-    env_ext.Append(
+if env['PLATFORM'] == 'darwin':
+    env.Append(
         RPATH=['@loader_path', '@executable_path'],
-        LINKFLAGS=['-Wl,-rpath,@loader_path', '-Wl,-rpath,@executable_path']
+        LINKFLAGS=['-Wl,-rpath,@loader_path', '-Wl,-rpath,@executable_path'],
     )
 
-env_ext.VariantDir('.checkpoints', '.', duplicate=False)
-
-shape_c = env_ext.Cython('.checkpoints/shape.pyx')
-shape = env_ext.SharedLibrary('shape', shape_c)
+env.VariantDir('.checkpoints', '.', duplicate=False)
+shape_c = env.Cython('.checkpoints/shape.pyx')
+shape = env.SharedLibrary('shape', shape_c)
 
 Return('shape')
